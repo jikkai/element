@@ -451,6 +451,19 @@
 
       toggleAllSelection() {
         this.store.commit('toggleAllSelection');
+      },
+
+      calcFixedTableRowHeight() {
+        this.$nextTick(() => {
+          const rows = this.$el.querySelectorAll('tbody tr td');
+          let maxHeight = 0;
+          [].forEach.call(rows, (row, index) => {
+            maxHeight = maxHeight > row.clientHeight ? maxHeight : row.clientHeight;
+          });
+          [].forEach.call(rows, row => {
+            row.style.height = maxHeight + 'px';
+          });
+        });
       }
     },
 
@@ -585,6 +598,7 @@
           this.store.commit('setData', value);
           if (this.$ready) {
             this.$nextTick(() => {
+              this.calcFixedTableRowHeight();
               this.doLayout();
             });
           }

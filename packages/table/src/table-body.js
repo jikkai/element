@@ -77,7 +77,8 @@ export default {
                                 store: this.store,
                                 _self: this.context || this.table.$vnode.context
                               },
-                              columnsHidden[cellIndex]
+                              columnsHidden[cellIndex],
+                              cellIndex
                             )
                           }
                         </td>

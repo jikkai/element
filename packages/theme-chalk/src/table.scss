@@ -235,9 +235,9 @@
     text-overflow: ellipsis;
     white-space: normal;
     word-break: break-all;
-    line-height: 23px;
     padding-left: 10px;
     padding-right: 10px;
+    display: inline-block;
 
     &.el-tooltip {
       white-space: nowrap;

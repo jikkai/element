@@ -228,101 +228,111 @@ export default {
   },
 
   created() {
-    this.customRender = this.$options.render;
-    this.$options.render = h => h('div', this.$slots.default);
+    this.initTable();
+  },
 
-    let parent = this.columnOrTableParent;
-    let owner = this.owner;
-    this.isSubColumn = owner !== parent;
-    this.columnId = (parent.tableId || parent.columnId) + '_column_' + columnIdSeed++;
+  methods: {
+    initTable() {
+      this.customRender = this.$options.render;
+      this.$options.render = h => h('div', this.$slots.default);
 
-    let type = this.type;
+      let parent = this.columnOrTableParent;
+      let owner = this.owner;
+      this.isSubColumn = owner !== parent;
+      this.columnId = (parent.tableId || parent.columnId) + '_column_' + columnIdSeed++;
 
-    const width = parseWidth(this.width);
-    const minWidth = parseMinWidth(this.minWidth);
+      let type = this.type;
 
-    let isColumnGroup = false;
+      const width = parseWidth(this.width);
+      const minWidth = parseMinWidth(this.minWidth);
 
-    let column = getDefaultColumn(type, {
-      id: this.columnId,
-      columnKey: this.columnKey,
-      label: this.label,
-      className: this.className,
-      labelClassName: this.labelClassName,
-      property: this.prop || this.property,
-      type,
-      renderCell: null,
-      renderHeader: this.renderHeader,
-      minWidth,
-      width,
-      isColumnGroup,
-      context: this.context,
-      align: this.align ? 'is-' + this.align : null,
-      headerAlign: this.headerAlign ? 'is-' + this.headerAlign : (this.align ? 'is-' + this.align : null),
-      sortable: this.sortable === '' ? true : this.sortable,
-      sortMethod: this.sortMethod,
-      sortBy: this.sortBy,
-      resizable: this.resizable,
-      showOverflowTooltip: this.showOverflowTooltip || this.showTooltipWhenOverflow,
-      formatter: this.formatter,
-      selectable: this.selectable,
-      reserveSelection: this.reserveSelection,
-      fixed: this.fixed === '' ? true : this.fixed,
-      filterMethod: this.filterMethod,
-      filters: this.filters,
-      filterable: (this.filters && this.filters.length) || this.filterMethod,
-      filterMultiple: this.filterMultiple,
-      filterOpened: false,
-      filteredValue: this.filteredValue || [],
-      filterPlacement: this.filterPlacement || '',
-      index: this.index,
-      sortOrders: this.sortOrders
-    });
+      let isColumnGroup = false;
 
-    let source = forced[type] || {};
-    for (let prop in source) {
-      if (source.hasOwnProperty(prop)) {
-        let value = source[prop];
-        if (value !== undefined) {
-          column[prop] = prop === 'className'
-            ? `${column[prop]} ${value}`
-            : value;
+      let column = getDefaultColumn(type, {
+        id: this.columnId,
+        columnKey: this.columnKey,
+        label: this.label,
+        className: this.className,
+        labelClassName: this.labelClassName,
+        property: this.prop || this.property,
+        type,
+        renderCell: null,
+        renderHeader: this.renderHeader,
+        minWidth,
+        width,
+        isColumnGroup,
+        context: this.context,
+        align: this.align ? 'is-' + this.align : null,
+        headerAlign: this.headerAlign ? 'is-' + this.headerAlign : (this.align ? 'is-' + this.align : null),
+        sortable: this.sortable === '' ? true : this.sortable,
+        sortMethod: this.sortMethod,
+        sortBy: this.sortBy,
+        resizable: this.resizable,
+        showOverflowTooltip: this.showOverflowTooltip || this.showTooltipWhenOverflow,
+        formatter: this.formatter,
+        selectable: this.selectable,
+        reserveSelection: this.reserveSelection,
+        fixed: this.fixed === '' ? true : this.fixed,
+        filterMethod: this.filterMethod,
+        filters: this.filters,
+        filterable: (this.filters && this.filters.length) || this.filterMethod,
+        filterMultiple: this.filterMultiple,
+        filterOpened: false,
+        filteredValue: this.filteredValue || [],
+        filterPlacement: this.filterPlacement || '',
+        index: this.index,
+        sortOrders: this.sortOrders
+      });
+
+      let source = forced[type] || {};
+      for (let prop in source) {
+        if (source.hasOwnProperty(prop)) {
+          let value = source[prop];
+          if (value !== undefined) {
+            column[prop] = prop === 'className'
+              ? `${column[prop]} ${value}`
+              : value;
+          }
         }
       }
-    }
 
-    this.columnConfig = column;
+      this.columnConfig = column;
 
-    let renderCell = column.renderCell;
-    let _self = this;
+      let renderCell = column.renderCell;
+      let _self = this;
 
-    if (type === 'expand') {
-      owner.renderExpanded = function(h, data) {
-        return _self.$scopedSlots.default
-          ? _self.$scopedSlots.default(data)
-          : _self.$slots.default;
-      };
+      if (type === 'expand') {
+        owner.renderExpanded = function(h, data) {
+          return _self.$scopedSlots.default
+            ? _self.$scopedSlots.default(data)
+            : _self.$slots.default;
+        };
 
-      column.renderCell = function(h, data) {
-        return <div class="cell">{ renderCell(h, data, this._renderProxy) }</div>;
-      };
+        column.renderCell = function(h, data) {
+          return <div class="cell">{ renderCell(h, data, this._renderProxy) }</div>;
+        };
 
-      return;
-    }
-
-    column.renderCell = function(h, data) {
-      if (_self.$scopedSlots.default) {
-        renderCell = () => _self.$scopedSlots.default(data);
+        return;
       }
 
-      if (!renderCell) {
-        renderCell = DEFAULT_RENDER_CELL;
-      }
+      column.renderCell = function(h, data, columnsHidden, cellIndex) {
+        const isFixedColumn = cellIndex < this.leftFixedLeafCount || cellIndex >= this.columnsCount - this.rightFixedLeafCount;
+        if (isFixedColumn && columnsHidden) {
+          this.$parent.calcFixedTableRowHeight();
+          renderCell = null;
+        } else if (_self.$scopedSlots.default) {
+          renderCell = () => _self.$scopedSlots.default(data);
+        }
 
-      return _self.showOverflowTooltip || _self.showTooltipWhenOverflow
-        ? <div class="cell el-tooltip" style={ {width: (data.column.realWidth || data.column.width) - 1 + 'px'} }>{ renderCell(h, data) }</div>
-        : <div class="cell">{ renderCell(h, data) }</div>;
-    };
+        if (!renderCell) {
+          renderCell = DEFAULT_RENDER_CELL;
+        }
+
+        return _self.showOverflowTooltip || _self.showTooltipWhenOverflow
+          ? <div class="cell el-tooltip" style={ {width: (data.column.realWidth || data.column.width) - 1 + 'px'} }>{ renderCell(h, data) }</div>
+          : <div class="cell">{ renderCell(h, data) }</div>;
+      };
+    }
   },
 
   destroyed() {
